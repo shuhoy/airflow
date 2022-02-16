@@ -40,7 +40,7 @@ import { getMetaValue } from '../utils';
 const dagId = getMetaValue('dag_id');
 
 const renderTaskRows = ({
-  task, containerRef, level = 0, isParentOpen,
+  task, containerRef, level = 0, isParentOpen, onSelectInstance,
 }) => task.children.map((t) => (
   <Row
     key={t.id}
@@ -49,6 +49,7 @@ const renderTaskRows = ({
     containerRef={containerRef}
     prevTaskId={task.id}
     isParentOpen={isParentOpen}
+    onSelectInstance={onSelectInstance}
   />
 ));
 
@@ -85,7 +86,9 @@ const TaskName = ({
   </Box>
 );
 
-const TaskInstances = ({ task, containerRef, dagRuns }) => (
+const TaskInstances = ({
+  task, containerRef, dagRuns, onSelectInstance,
+}) => (
   <Flex justifyContent="flex-end">
     {dagRuns.map((run) => {
       // Check if an instance exists for the run, or return an empty box
@@ -98,6 +101,7 @@ const TaskInstances = ({ task, containerRef, dagRuns }) => (
             containerRef={containerRef}
             extraLinks={task.extraLinks}
             group={task}
+            onSelectInstance={onSelectInstance}
           />
         )
         : <Box key={`${run.runId}-${task.id}`} width="18px" data-testid="blank-task" />;
@@ -106,7 +110,7 @@ const TaskInstances = ({ task, containerRef, dagRuns }) => (
 );
 
 const Row = ({
-  task, containerRef, level, prevTaskId, isParentOpen = true,
+  task, containerRef, level, prevTaskId, isParentOpen = true, onSelectInstance,
 }) => {
   const { data: { dagRuns = [] } } = useTreeData();
   const isGroup = !!task.children;
@@ -162,13 +166,18 @@ const Row = ({
         <Td width={0} p={0} borderBottom={0} />
         <Td p={0} align="right" _groupHover={{ backgroundColor: 'rgba(113, 128, 150, 0.1)' }} transition="background-color 0.2s" borderBottom={0}>
           <Collapse in={isFullyOpen}>
-            <TaskInstances dagRuns={dagRuns} task={task} containerRef={containerRef} />
+            <TaskInstances
+              dagRuns={dagRuns}
+              task={task}
+              containerRef={containerRef}
+              onSelectInstance={onSelectInstance}
+            />
           </Collapse>
         </Td>
       </Tr>
       {isGroup && (
         renderTaskRows({
-          task, containerRef, level: level + 1, isParentOpen: isOpen,
+          task, containerRef, level: level + 1, isParentOpen: isOpen, onSelectInstance,
         })
       )}
     </>
