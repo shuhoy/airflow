@@ -28,6 +28,7 @@ import {
   Flex,
   useDisclosure,
   Collapse,
+  useTheme,
 } from '@chakra-ui/react';
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
 
@@ -40,7 +41,7 @@ import { getMetaValue } from '../utils';
 const dagId = getMetaValue('dag_id');
 
 const renderTaskRows = ({
-  task, containerRef, level = 0, isParentOpen, onSelectInstance,
+  task, containerRef, level = 0, isParentOpen, onSelectInstance, selectedInstance,
 }) => task.children.map((t) => (
   <Row
     key={t.id}
@@ -50,40 +51,37 @@ const renderTaskRows = ({
     prevTaskId={task.id}
     isParentOpen={isParentOpen}
     onSelectInstance={onSelectInstance}
+    selectedInstance={selectedInstance}
   />
 ));
 
 const TaskName = ({
   isGroup = false, isMapped = false, onToggle, isOpen, level, taskName,
 }) => (
-  <Box _groupHover={{ backgroundColor: 'rgba(113, 128, 150, 0.1)' }} transition="background-color 0.2s">
-    <Flex
-      as={isGroup ? 'button' : 'div'}
-      onClick={() => isGroup && onToggle()}
-      color={level > 4 && 'white'}
-      aria-label={taskName}
-      title={taskName}
-      mr={4}
-      width="100%"
-      backgroundColor={`rgba(203, 213, 224, ${0.25 * level})`}
-      alignItems="center"
+  <Flex
+    as={isGroup ? 'button' : 'div'}
+    onClick={() => isGroup && onToggle()}
+    aria-label={taskName}
+    title={taskName}
+    mr={4}
+    width="100%"
+    alignItems="center"
+  >
+    <Text
+      display="inline"
+      fontSize="12px"
+      ml={level * 4 + 4}
+      isTruncated
     >
-      <Text
-        display="inline"
-        fontSize="12px"
-        ml={level * 4 + 4}
-        isTruncated
-      >
-        {taskName}
-        {isMapped && (
-          ' [ ]'
-        )}
-      </Text>
-      {isGroup && (
-        isOpen ? <FiChevronDown data-testid="open-group" /> : <FiChevronUp data-testid="closed-group" />
+      {taskName}
+      {isMapped && (
+        ' [ ]'
       )}
-    </Flex>
-  </Box>
+    </Text>
+    {isGroup && (
+      isOpen ? <FiChevronDown data-testid="open-group" /> : <FiChevronUp data-testid="closed-group" />
+    )}
+  </Flex>
 );
 
 const TaskInstances = ({
@@ -104,16 +102,20 @@ const TaskInstances = ({
             onSelectInstance={onSelectInstance}
           />
         )
-        : <Box key={`${run.runId}-${task.id}`} width="18px" data-testid="blank-task" />;
+        : <Box key={`${run.runId}-${task.id}`} width="16px" data-testid="blank-task" />;
     })}
   </Flex>
 );
 
-const Row = ({
-  task, containerRef, level, prevTaskId, isParentOpen = true, onSelectInstance,
-}) => {
+const Row = (props) => {
+  const {
+    task, containerRef, level, prevTaskId, isParentOpen = true, onSelectInstance, selectedInstance,
+  } = props;
   const { data: { dagRuns = [] } } = useTreeData();
+  const { colors } = useTheme();
+  const hoverBlue = `${colors.blue[100]}50`;
   const isGroup = !!task.children;
+  const isSelected = selectedInstance.taskId === task.id;
 
   const taskName = prevTaskId ? task.id.replace(`${prevTaskId}.`, '') : task.id;
 
@@ -136,21 +138,23 @@ const Row = ({
   return (
     <>
       <Tr
-        backgroundColor={`rgba(203, 213, 224, ${0.25 * level})`}
+        bg={isSelected ? 'blue.100' : undefined}
         borderBottomWidth={isFullyOpen ? 1 : 0}
-        borderBottomColor={level > 1 ? 'white' : 'gray.200'}
+        borderBottomColor="gray.200"
         role="group"
+        _hover={!isSelected && { bg: hoverBlue }}
+        transition="background-color 0.2s"
       >
         <Td
-          _groupHover={level > 3 && {
-            color: 'white',
-          }}
+          bg={isSelected ? 'blue.100' : 'white'}
+          _groupHover={!isSelected && ({ bg: 'blue.50' })}
           p={0}
+          transition="background-color 0.2s"
           lineHeight="18px"
           position="sticky"
           left={0}
-          backgroundColor="white"
           borderBottom={0}
+          zIndex={2}
         >
           <Collapse in={isFullyOpen}>
             <TaskName
@@ -164,7 +168,11 @@ const Row = ({
           </Collapse>
         </Td>
         <Td width={0} p={0} borderBottom={0} />
-        <Td p={0} align="right" _groupHover={{ backgroundColor: 'rgba(113, 128, 150, 0.1)' }} transition="background-color 0.2s" borderBottom={0}>
+        <Td
+          p={0}
+          align="right"
+          borderBottom={0}
+        >
           <Collapse in={isFullyOpen}>
             <TaskInstances
               dagRuns={dagRuns}
@@ -177,7 +185,9 @@ const Row = ({
       </Tr>
       {isGroup && (
         renderTaskRows({
-          task, containerRef, level: level + 1, isParentOpen: isOpen, onSelectInstance,
+          ...props,
+          level: level + 1,
+          isParentOpen: isOpen,
         })
       )}
     </>
