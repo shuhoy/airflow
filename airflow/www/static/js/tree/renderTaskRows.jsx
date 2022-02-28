@@ -32,7 +32,6 @@ import {
 } from '@chakra-ui/react';
 import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
 
-import useTreeData from './useTreeData';
 import StatusBox from './StatusBox';
 
 import { getMetaValue } from '../utils';
@@ -41,7 +40,7 @@ import { getMetaValue } from '../utils';
 const dagId = getMetaValue('dag_id');
 
 const renderTaskRows = ({
-  task, containerRef, level = 0, isParentOpen, onSelectInstance, selectedInstance,
+  task, containerRef, level = 0, isParentOpen, onSelectInstance, selectedInstance, dagRunIds
 }) => task.children.map((t) => (
   <Row
     key={t.id}
@@ -52,6 +51,7 @@ const renderTaskRows = ({
     isParentOpen={isParentOpen}
     onSelectInstance={onSelectInstance}
     selectedInstance={selectedInstance}
+    dagRunIds={dagRunIds}
   />
 ));
 
@@ -85,33 +85,42 @@ const TaskName = ({
 );
 
 const TaskInstances = ({
-  task, containerRef, dagRuns, onSelectInstance,
+  task, containerRef, dagRunIds, onSelectInstance, selectedInstance,
 }) => (
   <Flex justifyContent="flex-end">
-    {dagRuns.map((run) => {
+    {dagRunIds.map((runId) => {
       // Check if an instance exists for the run, or return an empty box
-      const instance = task.instances.find((gi) => gi.runId === run.runId);
+      const instance = task.instances.find((gi) => gi.runId === runId);
+      const key = `${runId}-${task.id}`;
       return instance
         ? (
           <StatusBox
-            key={`${run.runId}-${task.id}`}
+            key={key}
             instance={instance}
             containerRef={containerRef}
             extraLinks={task.extraLinks}
             group={task}
             onSelectInstance={onSelectInstance}
+            selectedInstance={selectedInstance}
           />
         )
-        : <Box key={`${run.runId}-${task.id}`} width="16px" data-testid="blank-task" />;
+        : <Box key={key} width="16px" data-testid="blank-task" />;
     })}
   </Flex>
 );
 
 const Row = (props) => {
   const {
-    task, containerRef, level, prevTaskId, isParentOpen = true, onSelectInstance, selectedInstance,
+    task,
+    containerRef,
+    level,
+    prevTaskId,
+    isParentOpen = true,
+    onSelectInstance,
+    selectedInstance,
+    dagRunIds,
   } = props;
-  const { data: { dagRuns = [] } } = useTreeData();
+  // const { data: { dagRuns = [] } } = useTreeData();
   const { colors } = useTheme();
   const hoverBlue = `${colors.blue[100]}50`;
   const isGroup = !!task.children;
@@ -175,10 +184,11 @@ const Row = (props) => {
         >
           <Collapse in={isFullyOpen}>
             <TaskInstances
-              dagRuns={dagRuns}
+              dagRunIds={dagRunIds}
               task={task}
               containerRef={containerRef}
               onSelectInstance={onSelectInstance}
+              selectedInstance={selectedInstance}
             />
           </Collapse>
         </Td>

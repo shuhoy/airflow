@@ -39,8 +39,10 @@ import SidePanel from './SidePanel';
 const Tree = () => {
   const containerRef = useRef();
   const scrollRef = useRef();
-  const { data: { groups = {} }, isRefreshOn, onToggleRefresh } = useTreeData();
+  const { data: { groups = {}, dagRuns = [] }, isRefreshOn, onToggleRefresh } = useTreeData();
   const [selectedInstance, setSelectedInstance] = useState({});
+
+  const dagRunIds = dagRuns.map((dr) => dr.runId);
 
   useEffect(() => {
     // Set initial scroll to far right if it is scrollable
@@ -73,11 +75,15 @@ const Tree = () => {
           <Box mr="12px" pb="12px" overflowX="auto" ref={scrollRef} maxWidth="60vw">
             <Table height={0}>
               <Thead>
-                <DagRuns containerRef={containerRef} selectedInstance={selectedInstance} />
+                <DagRuns
+                  containerRef={containerRef}
+                  selectedInstance={selectedInstance}
+                  onSelectInstance={onSelectInstance}
+                />
               </Thead>
               <Tbody>
                 {renderTaskRows({
-                  task: groups, containerRef, onSelectInstance, selectedInstance,
+                  task: groups, containerRef, onSelectInstance, selectedInstance, dagRunIds,
                 })}
               </Tbody>
             </Table>
