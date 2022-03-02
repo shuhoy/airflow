@@ -24,6 +24,7 @@ import ReactDOM from 'react-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
+import { QueryClient, QueryClientProvider } from 'react-query';
 import Tree from './Tree';
 
 // create shadowRoot
@@ -36,12 +37,22 @@ const myCache = createCache({
 const mainElement = document.getElementById('react-container');
 shadowRoot.appendChild(mainElement);
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 function App() {
   return (
     <React.StrictMode>
       <CacheProvider value={myCache}>
         <ChakraProvider>
-          <Tree />
+          <QueryClientProvider client={queryClient}>
+            <Tree />
+          </QueryClientProvider>
         </ChakraProvider>
       </CacheProvider>
     </React.StrictMode>
